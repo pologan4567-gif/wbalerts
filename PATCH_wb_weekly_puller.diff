@@ -1,0 +1,42 @@
+--- wb_weekly_puller.py (оригинал v7)  →  wb_weekly_puller.py (v8 с env + Telegram)
+
+ИЗМЕНЕНИЕ 1: Заменить хардкод токенов (строки ~17-18) на чтение из env
+═══════════════════════════════════════════════════════════════════════
+
+БЫЛО:
+    API_TOKEN = "eyJhbGci..."
+    ADV_TOKEN = "eyJhbGci..."
+
+СТАЛО:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+    API_TOKEN = os.environ.get("WB_API_TOKEN", "")
+    ADV_TOKEN = os.environ.get("WB_ADV_TOKEN", "")
+
+    if not API_TOKEN:
+        err("WB_API_TOKEN не задан. Создай .env или экспортируй переменную.")
+        sys.exit(1)
+
+
+ИЗМЕНЕНИЕ 2: Добавить вызов notifier в конце функции main()
+═══════════════════════════════════════════════════════════════════════
+
+НАЙТИ в main() строку:
+    print(f" {C.GREEN}{C.BOLD}Готово!...")
+
+ВСТАВИТЬ ПЕРЕД ней:
+    # ── Telegram-уведомление ─────────────────────────────────────────────
+    try:
+        from notifier import notify
+        _prev = prev_meta if (compare and mode == "week") else None
+        notify(current_meta, _prev, mode)
+    except Exception as e:
+        warn(f"Telegram: {e}")
+    # ─────────────────────────────────────────────────────────────────────
+
+
+ВСЕ ОСТАЛЬНЫЕ ФУНКЦИИ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ.
