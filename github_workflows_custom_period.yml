@@ -1,0 +1,32 @@
+name: WB Custom Period Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      date_from:
+        description: 'Дата начала (ГГГГ-ММ-ДД)'
+        required: true
+      date_to:
+        description: 'Дата конца (ГГГГ-ММ-ДД)'
+        required: true
+
+jobs:
+  run-custom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install requests pandas openpyxl python-dotenv
+      - name: Run custom period
+        env:
+          WB_API_TOKEN: ${{ secrets.WB_API_TOKEN }}
+          WB_ADV_TOKEN: ${{ secrets.WB_ADV_TOKEN }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID:   ${{ secrets.TG_CHAT_ID }}
+        run: |
+          python wb_weekly_puller.py \
+            --from ${{ github.event.inputs.date_from }} \
+            --to   ${{ github.event.inputs.date_to }}

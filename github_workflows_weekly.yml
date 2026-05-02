@@ -1,0 +1,59 @@
+name: WB Weekly Report
+
+on:
+  schedule:
+    # Каждый понедельник в 09:00 МСК (06:00 UTC)
+    - cron: '0 6 * * 1'
+  # Кнопка ручного запуска в интерфейсе GitHub
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Режим (week / month / compare)'
+        required: false
+        default: 'week'
+
+jobs:
+  run-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install requests pandas openpyxl python-dotenv
+
+      - name: Run WB Weekly Puller
+        env:
+          WB_API_TOKEN: ${{ secrets.WB_API_TOKEN }}
+          WB_ADV_TOKEN: ${{ secrets.WB_ADV_TOKEN }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID:   ${{ secrets.TG_CHAT_ID }}
+        run: |
+          MODE="${{ github.event.inputs.mode || 'week' }}"
+          if [ "$MODE" = "compare" ]; then
+            python wb_weekly_puller.py --compare
+          elif [ "$MODE" = "month" ]; then
+            python wb_weekly_puller.py --month
+          else
+            python wb_weekly_puller.py
+          fi
+
+      - name: Commit reports to repo
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git add -f reports/ *.xlsx *.csv 2>/dev/null || true
+          git diff-index --quiet HEAD || git commit -m "auto: WB report $(date +'%Y-%m-%d')"
+
+      - name: Push
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main

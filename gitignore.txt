@@ -1,0 +1,8 @@
+.env
+*.csv
+*.xlsx
+*.json
+__pycache__/
+*.pyc
+.DS_Store
+reports/
